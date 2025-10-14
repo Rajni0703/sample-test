@@ -16,7 +16,6 @@ steps:
     echo "##vso[task.prependpath]$(pwd)/venv/bin"
   displayName: 'Setup Python with venv'
 
-# Create test-reports directory first
 - script: |
     mkdir -p test-reports
     echo "Created test-reports directory"
@@ -33,7 +32,6 @@ steps:
     testResultsFiles: 'test-results.xml'
   displayName: 'Publish test results'
 
-# Debug: Check what files exist
 - script: |
     echo "=== CHECKING GENERATED FILES ==="
     pwd
