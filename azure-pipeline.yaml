@@ -1,0 +1,35 @@
+# Create this file in your repo root
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+
+pr:
+  branches:
+    include:
+      - main
+
+pool: latestagent
+
+steps:
+# Step 1: Checkout code
+- checkout: self
+
+# Step 2: Setup Python
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Setup Python'
+
+# Step 3: Run Tests
+- script: |
+    python -m pytest tests/ --junitxml=test-results.xml
+  displayName: 'Run Tests'
+
+# Step 4: Publish Test Results
+- task: PublishTestResults@2
+  inputs:
+    testRunner: 'JUnit'
+    testResultsFiles: 'test-results.xml'
+  displayName: 'Publish Test Results'
