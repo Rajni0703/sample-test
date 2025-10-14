@@ -1,20 +1,49 @@
+trigger:
+  branches:
+    include:
+    - main
+
+pool: latestagent
+
 steps:
-# Step 1: Checkout code
 - checkout: self
 
-# Step 2: Setup Python using Azure task
-- task: UsePythonVersion@0
+- script: |
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install -r requirements.txt pytest-html
+    echo "##vso[task.prependpath]$(pwd)/venv/bin"
+  displayName: 'Setup Python with venv'
+
+# Create test-reports directory first
+- script: |
+    mkdir -p test-reports
+    echo "Created test-reports directory"
+  displayName: 'Create reports directory'
+
+- script: |
+    source venv/bin/activate
+    python -m pytest tests/ -v --junitxml=test-results.xml --html=test-reports/report.html --self-contained-html
+  displayName: 'Run tests with HTML report'
+
+- task: PublishTestResults@2
   inputs:
-    versionSpec: '3.x'
-    addToPath: true
+    testRunner: 'JUnit'
+    testResultsFiles: 'test-results.xml'
+  displayName: 'Publish test results'
 
-# Step 3: Install dependencies
+# Debug: Check what files exist
 - script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
+    echo "=== CHECKING GENERATED FILES ==="
+    pwd
+    ls -la
+    echo "=== TEST-REPORTS CONTENTS ==="
+    ls -la test-reports/
+  displayName: 'Debug Generated Files'
 
-# Step 4: Run tests
-- script: |
-    python -m pytest tests/ --junitxml=test-results.xml
-  displayName: 'Run Tests'
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: 'test-reports'
+    artifactName: 'HTMLTestReports'
+  displayName: 'Publish HTML reports'
