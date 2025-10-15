@@ -6,53 +6,76 @@ trigger:
 
 pool: latestagent
 
-steps:
-- checkout: self
+stages:
+- stage: Test
+  displayName: 'Run Tests and Generate Reports'
+  jobs:
+  - job: RunTests
+    steps:
+    - checkout: self
 
-- script: |
-    python3 -m venv venv
-    source venv/bin/activate
-    pip3 install --upgrade pip
-    pip3 install -r requirements.txt pytest-html
-  displayName: 'Setup Python with venv'
+    - script: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip3 install --upgrade pip
+        pip3 install -r requirements.txt pytest-html
+      displayName: 'Setup Python with venv'
 
-- script: |
-    mkdir -p test-reports
-    echo "Created test-report directory"
-  displayName: 'Create reports directory'
+    - script: |
+        mkdir -p test-reports
+        echo "Created test-report directory"
+      displayName: 'Create reports directory'
 
-- script: |
-    source venv/bin/activate
-    python -m pytest tests/ -v --junitxml=test-reports/test-results.xml --html=test-reports/report.html --self-contained-html
-  displayName: 'Run tests with HTML reports'
-  continueOnError: true
+    - script: |
+        source venv/bin/activate
+        python -m pytest tests/ -v --junitxml=test-reports/test-results.xml --html=test-reports/report.html --self-contained-html
+      displayName: 'Run tests with HTML reports'
+      continueOnError: true
 
-- script: |
-    source venv/bin/activate
-    echo "Generating CSV test report..."
-    python generate_csv_report.py
-  displayName: 'Generate CSV test report'
+    - script: |
+        source venv/bin/activate
+        echo "Generating CSV test report..."
+        python generate_csv_report.py
+      displayName: 'Generate CSV test report'
 
-- task: PublishTestResults@2
-  inputs:
-    testRunner: 'JUnit'
-    testResultsFiles: 'test-reports/test-results.xml'
-  displayName: 'Publish test results'
+    - task: PublishTestResults@2
+      inputs:
+        testRunner: 'JUnit'
+        testResultsFiles: 'test-reports/test-results.xml'
+      displayName: 'Publish test results'
 
-- script: |
-    echo "=== CHECKING GENERATED FILES ==="
-    pwd
-    ls -la
-    echo "=== TEST-REPORTS CONTENTS ==="
-    ls -la test-reports/
-    echo "=== CHECKING IF FILES EXIST ==="
-    [ -f "test-reports/test-results.xml" ] && echo "test-results.xml exists" || echo "test-results.xml missing"
-    [ -f "test-reports/test-results.csv" ] && echo "test-results.csv exists" || echo "test-results.csv missing"
-    [ -f "test-reports/report.html" ] && echo "report.html exists" || echo "report.html missing"
-  displayName: 'Debug Generated Files'
+    - script: |
+        echo "=== CHECKING GENERATED FILES ==="
+        pwd
+        ls -la
+        echo "=== TEST-REPORTS CONTENTS ==="
+        ls -la test-reports/
+        echo "=== CHECKING IF FILES EXIST ==="
+        [ -f "test-reports/test-results.xml" ] && echo "test-results.xml exists" || echo "test-results.xml missing"
+        [ -f "test-reports/test-results.csv" ] && echo "test-results.csv exists" || echo "test-results.csv missing"
+        [ -f "test-reports/report.html" ] && echo "report.html exists" || echo "report.html missing"
+      displayName: 'Debug Generated Files'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathtoPublish: 'test-reports'
-    artifactName: 'HTMLTestReports'
-  displayName: 'Publish HTML reports'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: 'test-reports'
+        artifactName: 'HTMLTestReports'
+      displayName: 'Publish HTML reports'
+
+- stage: Approval
+  displayName: '🛑 Deployment Approval'
+  dependsOn: Test
+  condition: succeeded()
+  jobs:
+  - deployment: WaitForApproval
+    displayName: 'Wait for manual approval'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              echo "All tests completed successfully! ✅"
+              echo "Please review the test reports in HTMLTestReports artifact"
+              echo "Waiting for manual approval to continue..."
+            displayName: 'Approval pending...'
