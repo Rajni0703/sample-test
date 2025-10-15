@@ -30,7 +30,6 @@ stages:
         source venv/bin/activate
         python -m pytest tests/ -v --junitxml=test-reports/test-results.xml --html=test-reports/report.html --self-contained-html
       displayName: 'Run tests with HTML reports'
-      continueOnError: true
 
     - script: |
         source venv/bin/activate
@@ -75,8 +74,8 @@ stages:
         deploy:
           steps:
           - script: |
-              echo "All tests completed successfully! ✅"
-              echo "This is MAIN BRANCH - Manual approval required"
+              echo "🎉 ALL TESTS PASSED! 100% SUCCESS RATE"
+              echo "This is MAIN BRANCH - Manual approval required before any deployment"
               echo "Please review the test reports in HTMLTestReports artifact"
-              echo "Waiting for manual approval to continue..."
-            displayName: 'Approval pending...'
+              echo "Click 'Resume' in Azure DevOps to approve and continue"
+            displayName: 'Approval pending - All tests passed'
