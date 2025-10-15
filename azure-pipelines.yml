@@ -5,7 +5,7 @@ trigger:
     - feature/*
     - develop
 
-pool: default  # or your self-hosted pool name
+pool: latestagent
 
 steps:
 - checkout: self
