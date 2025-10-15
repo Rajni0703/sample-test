@@ -5,8 +5,7 @@ trigger:
     - feature/*
     - develop
 
-pool:
-  vmImage: 'ubuntu-latest'
+pool: latestagent
 
 steps:
 - checkout: self
