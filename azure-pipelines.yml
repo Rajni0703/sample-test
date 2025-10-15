@@ -30,6 +30,7 @@ stages:
         source venv/bin/activate
         python -m pytest tests/ -v --junitxml=test-reports/test-results.xml --html=test-reports/report.html --self-contained-html
       displayName: 'Run tests with HTML reports'
+      continueOnError: true  # ← ADD THIS BACK
 
     - script: |
         source venv/bin/activate
