@@ -58,4 +58,4 @@ steps:
     echo "Then manually resume this pipeline in Azure DevOps UI"
     echo "#############################################"
   condition: succeeded()
-  displayName: '🛑 Manual Check Required - Resume Pipeline'
+  displayName: '🛑 Manual Check Required -Resume Pipeline'
