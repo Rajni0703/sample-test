@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
     - main
+    - feature/*
 
 pool: latestagent
 
@@ -70,7 +71,7 @@ stages:
         deploy:
           steps:
           - script: |
-              echo "All tests passeds! ✅"
+              echo "All tests passed! ✅"
               echo "Waiting for manual approval to continue..."
               echo "Check the HTMLTestReports artifact for test results."
             displayName: 'Approval pending...'
