@@ -26,6 +26,11 @@ steps:
     python -m pytest tests/ -v --junitxml=test-results.xml --html=test-reports/report.html --self-contained-html
   displayName: 'Run tests with HTML report'
 
+# publish test results
+# - task: PublishTestResults@2
+#   inputs:
+#     testResultsFormat: 'JUnit'
+#     testResultsFiles: '**/TEST-*.xml'
 - task: PublishTestResults@2
   inputs:
     testRunner: 'JUnit'
@@ -45,3 +50,12 @@ steps:
     pathtoPublish: 'test-reports'
     artifactName: 'HTMLTestReports'
   displayName: 'Publish HTML reports'
+
+#choose artifact
+# - task: PublishBuildArtifacts@1
+#   inputs:
+#     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#     ArtifactName: 'drop'
+#     publishLocation: 'Container'
+
+  
