@@ -52,7 +52,7 @@ steps:
 - script: |
     echo "#############################################"
     echo "🛑 MANUAL INTERVENTION REQUIRED"
-    echo "#############################################"
+    echo "###########################################"
     echo "All tests passed successfully!"
     echo "Please check the test reports in HTMLTestReports artifact"
     echo "Then manually resume this pipeline in Azure DevOps UI"
