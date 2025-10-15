@@ -18,7 +18,7 @@ steps:
 
 - script: |
     mkdir -p test-reports
-    echo "Created test-reports directory"
+    echo "Created test-report directory"
   displayName: 'Create reports directory'
 
 - script: |
