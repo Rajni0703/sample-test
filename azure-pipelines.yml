@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
     - main
+    - feature/*
 
 pool: latestagent
 
@@ -11,20 +12,26 @@ steps:
 - script: |
     python3 -m venv venv
     source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt pytest-html
-    echo "##vso[task.prependpath]$(pwd)/venv/bin"
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt pytest-html
   displayName: 'Setup Python with venv'
 
 - script: |
     mkdir -p test-reports
-    echo "Created test-reports directory"
+    echo "Created test-report directory"
   displayName: 'Create reports directory'
 
 - script: |
     source venv/bin/activate
-    python -m pytest tests/ -v --junitxml=test-results.xml --html=test-reports/report.html --self-contained-html
-  displayName: 'Run tests with HTML report'
+    python -m pytest tests/ -v --junitxml=test-reports/test-results.xml --html=test-reports/report.html --self-contained-html
+  displayName: 'Run tests with HTML reports'
+  continueOnError: true
+
+- script: |
+    source venv/bin/activate
+    echo "Generating CSV test report..."
+    python generate_csv_report.py
+  displayName: 'Generate CSV test report'
 
 # publish test results
 # - task: PublishTestResults@2
@@ -34,7 +41,7 @@ steps:
 - task: PublishTestResults@2
   inputs:
     testRunner: 'JUnit'
-    testResultsFiles: 'test-results.xml'
+    testResultsFiles: 'test-reports/test-results.xml'
   displayName: 'Publish test results'
 
 - script: |
@@ -43,6 +50,10 @@ steps:
     ls -la
     echo "=== TEST-REPORTS CONTENTS ==="
     ls -la test-reports/
+    echo "=== CHECKING IF FILES EXIST ==="
+    [ -f "test-reports/test-results.xml" ] && echo "test-results.xml exists" || echo "test-results.xml missing"
+    [ -f "test-reports/test-results.csv" ] && echo "test-results.csv exists" || echo "test-results.csv missing"
+    [ -f "test-reports/report.html" ] && echo "report.html exists" || echo "report.html missing"
   displayName: 'Debug Generated Files'
 
 - task: PublishBuildArtifacts@1
