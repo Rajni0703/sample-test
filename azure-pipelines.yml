@@ -5,57 +5,72 @@ trigger:
 
 pool: latestagent
 
-steps:
-- checkout: self
+stages:
+- stage: Test
+  displayName: 'Run Tests and Generate Reports'
+  jobs:
+  - job: RunTests
+    steps:
+    - checkout: self
 
-- script: |
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt pytest-html
-    echo "##vso[task.prependpath]$(pwd)/venv/bin"
-  displayName: 'Setup Python with venv'
+    - script: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt pytest-html
+        echo "##vso[task.prependpath]$(pwd)/venv/bin"
+      displayName: 'Setup Python with venv'
 
-# Create test-reports directory first
-- script: |
-    mkdir -p test-reports
-    echo "Created test-reports directory"
-  displayName: 'Create reports directory'
+    - script: |
+        mkdir -p test-reports
+        echo "Created test-reports directory"
+      displayName: 'Create reports directory'
 
-- script: |
-    source venv/bin/activate
-    python -m pytest tests/ -v --junitxml=test-results.xml --html=test-reports/report.html --self-contained-html
-  displayName: 'Run tests with HTML report'
+    - script: |
+        source venv/bin/activate
+        python -m pytest tests/ -v --junitxml=test-results.xml --html=test-reports/report.html --self-contained-html
+      displayName: 'Run tests with HTML report'
 
-- task: PublishTestResults@2
-  inputs:
-    testRunner: 'JUnit'
-    testResultsFiles: 'test-results.xml'
-  displayName: 'Publish test results'
+    - task: PublishTestResults@2
+      inputs:
+        testRunner: 'JUnit'
+        testResultsFiles: 'test-results.xml'
+      displayName: 'Publish test results'
 
-# Debug: Check what files exist
-- script: |
-    echo "=== CHECKING GENERATED FILES ==="
-    pwd
-    ls -la
-    echo "=== TEST-REPORTS CONTENTS ==="
-    ls -la test-reports/
-  displayName: 'Debug Generated Files'
+    - script: |
+        source venv/bin/activate
+        echo "Generating CSV test report..."
+        python generate_csv_report.py
+      displayName: 'Generate CSV test report'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathtoPublish: 'test-reports'
-    artifactName: 'HTMLTestReports'
-  displayName: 'Publish HTML reports'
+    - script: |
+        echo "=== CHECKING GENERATED FILES ==="
+        pwd
+        ls -la
+        echo "=== TEST-REPORTS CONTENTS ==="
+        ls -la test-reports/
+      displayName: 'Debug Generated Files'
 
-    # Add this at the end of your current YAML (no stages needed):
-- script: |
-    echo "#############################################"
-    echo "🛑 MANUAL INTERVENTION REQUIRED"
-    echo "###########################################"
-    echo "All tests passed successfully!"
-    echo "Please check the test reports in HTMLTestReports artifact"
-    echo "Then manually resume this pipeline in Azure DevOps UI"
-    echo "#############################################"
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: 'test-reports'
+        artifactName: 'HTMLTestReports'
+      displayName: 'Publish HTML reports'
+
+- stage: Approval
+  displayName: '🛑 Deployment Approval'
+  dependsOn: Test
   condition: succeeded()
-  displayName: '🛑 Manual Check Required -Resume Pipeline'
+  jobs:
+  - deployment: WaitForApproval
+    displayName: 'Wait for manual approval'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              echo "All tests passeds! ✅"
+              echo "Waiting for manual approval to continue..."
+              echo "Check the HTMLTestReports artifact for test results."
+            displayName: 'Approval pending...'
