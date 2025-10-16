@@ -79,7 +79,7 @@ stages:
     steps:
     - download: current
       artifact: HTMLTestReports
-      displayName: 'Download test artifacts'
+      displayName: 'Download test artifacts '
     
     - script: |
         echo "=== STARTING DEPLOYMENT ==="
