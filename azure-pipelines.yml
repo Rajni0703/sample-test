@@ -2,7 +2,6 @@ trigger:
   branches:
     include:
     - main
-    # Remove: - feature/*
 
 pool: latestagent
 
@@ -13,7 +12,7 @@ stages:
   - job: RunTests
     steps:
     - checkout: self
-      clean: true  # ← ADD THIS for fresh code
+      clean: true
 
     - script: |
         python3 -m venv venv
@@ -36,7 +35,7 @@ stages:
     - task: PublishTestResults@2
       inputs:
         testRunner: 'JUnit'
-        testResultsFiles: 'test-reports/test-results.xml'  # ← FIXED PATH
+        testResultsFiles: 'test-reports/test-results.xml'
       displayName: 'Publish test results'
 
     - script: |
@@ -45,16 +44,6 @@ stages:
         python generate_csv_report.py
       displayName: 'Generate CSV test report'
 
-    - script: |
-        echo "=== CHECKING GENERATED FILES ==="
-        pwd
-        ls -la
-        echo "=== TEST-REPORTS CONTENTS ==="
-        ls -la test-reports/
-        echo "=== CHECKING CSV FILE ==="
-        [ -f "test-reports/test-results.csv" ] && echo "CSV file exists" || echo "CSV file missing"
-      displayName: 'Debug Generated Files'
-
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: 'test-reports'
@@ -62,21 +51,22 @@ stages:
       displayName: 'Publish HTML reports'
 
 - stage: Approval
-  displayName: '🛑 Deployment Approval'
+  displayName: '🛑 Manual Approval Required'
   dependsOn: Test
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - job: WaitForApproval
     displayName: 'Wait for manual approval'
-    pool: server
-    timeoutInMinutes: 43200
+    pool: server  # ← REQUIRED for ManualValidation
+    timeoutInMinutes: 43200  # 30 days timeout
     steps:
     - task: ManualValidation@0
       inputs:
         notifyUsers: |
-          your-approver@company.com
-          another-approver@company.com
-        instructions: 'All tests passed! ✅ Please review the HTMLTestReports artifact and approve deployment.'
+          approver1@yourcompany.com
+          approver2@yourcompany.com
+          # Add actual approver email addresses here
+        instructions: 'All tests passed! ✅ Please review the HTMLTestReports artifact and approve for deployment.'
         onTimeout: 'reject'
 
 - stage: Deploy
@@ -85,8 +75,18 @@ stages:
   condition: succeeded()
   jobs:
   - job: Deploy
+    pool: latestagent
     steps:
+    - download: current
+      artifact: HTMLTestReports
+      displayName: 'Download test artifacts'
+    
     - script: |
-        echo "Starting deployment..."
-        # Add your deployment commands here
+        echo "=== STARTING DEPLOYMENT ==="
+        echo "All tests passed and manual approval granted!"
+        echo "Deploying to production..."
+        # Add your actual deployment commands here
+        # Example:
+        # az webapp deploy --name your-app --src-path ./package.zip
+        echo "Deployment completed successfully! 🎉"
       displayName: 'Deploy application'
