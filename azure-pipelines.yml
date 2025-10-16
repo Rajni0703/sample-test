@@ -50,43 +50,26 @@ stages:
         artifactName: 'HTMLTestReports'
       displayName: 'Publish HTML reports'
 
-- stage: Approval
-  displayName: '🛑 Manual Approval Required'
+- stage: Deploy
+  displayName: '🚀 Deploy to Production'
   dependsOn: Test
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
-  - job: WaitForApproval
-    displayName: 'Wait for manual approval'
-    pool: server  # ← REQUIRED for ManualValidation
-    timeoutInMinutes: 43200  # 30 days timeout
-    steps:
-    - task: ManualValidation@0
-      inputs:
-        notifyUsers: |
-          approver1@yourcompany.com
-          approver2@yourcompany.com
-          # Add actual approver email addresses here
-        instructions: 'All tests passed! ✅ Please review the HTMLTestReports artifact and approve for deployment.'
-        onTimeout: 'reject'
-
-- stage: Deploy
-  displayName: '🚀 Deploy to Production'
-  dependsOn: Approval
-  condition: succeeded()
-  jobs:
-  - job: Deploy
-    pool: latestagent
-    steps:
-    - download: current
-      artifact: HTMLTestReports
-      displayName: 'Download test artifacts '
-    
-    - script: |
-        echo "=== STARTING DEPLOYMENT ==="
-        echo "All tests passed and manual approval granted!"
-        echo "Deploying to production..."
-        # Add your actual deployment commands here
-        # Example:
-        # az webapp deploy --name your-app --src-path ./package.zip
-        echo "Deployment completed successfully! 🎉"
-      displayName: 'Deploy application'
+  - deployment: DeployToProduction
+    displayName: 'Deploy to Production'
+    environment: 'Production'  # ← This will trigger the approval
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: HTMLTestReports
+            displayName: 'Download test reports'
+          
+          - script: |
+              echo "=== STARTING DEPLOYMENT ==="
+              echo "All tests passed and approval granted!"
+              echo "Deploying to production..."
+              # Add your actual deployment commands here
+              echo "Deployment completed successfully! 🎉"
+            displayName: 'Deploy application'
