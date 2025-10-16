@@ -4,8 +4,7 @@ trigger:
     - main
     # Remove: - feature/*
 
-pool:
-  vmImage: latestagent
+pool: latestagent
 
 stages:
 - stage: Test
