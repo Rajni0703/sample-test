@@ -66,15 +66,27 @@ stages:
   dependsOn: Test
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
-  - deployment: WaitForApproval
+  - job: WaitForApproval
     displayName: 'Wait for manual approval'
-    environment: 'Production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - script: |
-              echo "All tests passed! ✅"
-              echo "Waiting for manual approval to continue..."
-              echo "Check the HTMLTestReports artifact for test results."
-            displayName: 'Approval pending...'
+    pool: server
+    timeoutInMinutes: 43200
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: |
+          your-approver@company.com
+          another-approver@company.com
+        instructions: 'All tests passed! ✅ Please review the HTMLTestReports artifact and approve deployment.'
+        onTimeout: 'reject'
+
+- stage: Deploy
+  displayName: '🚀 Deploy to Production'
+  dependsOn: Approval
+  condition: succeeded()
+  jobs:
+  - job: Deploy
+    steps:
+    - script: |
+        echo "Starting deployment..."
+        # Add your deployment commands here
+      displayName: 'Deploy application'
